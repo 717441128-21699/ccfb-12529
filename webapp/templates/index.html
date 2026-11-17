@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>助听器验配模拟系统 · 家属试听版</title>
+<style>
+:root{
+  --bg:#f4f6fa; --card:#fff; --ink:#1c2733; --sub:#5b6b7d;
+  --brand:#0f6fb8; --brand-d:#0a548d; --line:#d9e0e8;
+  --good:#1a8f4d; --warn:#c8741a; --bad:#c0392b; --soft:#eaf3fb;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;font-size:16px;line-height:1.6}
+header{background:linear-gradient(120deg,var(--brand-d),var(--brand));color:#fff;padding:18px 28px}
+header h1{margin:0;font-size:24px}
+header p{margin:4px 0 0;opacity:.9;font-size:14px}
+.wrap{max-width:1180px;margin:22px auto;padding:0 20px;display:grid;
+  grid-template-columns:380px 1fr;gap:20px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px;
+  box-shadow:0 2px 10px rgba(20,40,70,.05)}
+.card h2{font-size:18px;margin:0 0 14px;padding-bottom:10px;border-bottom:2px solid var(--soft)}
+label{display:block;font-weight:600;margin:12px 0 6px}
+select,input[type=file]{width:100%;padding:10px;font-size:15px;border:1px solid var(--line);
+  border-radius:9px;background:#fff}
+table.audio{width:100%;border-collapse:collapse;font-size:14px}
+table.audio th,table.audio td{border:1px solid var(--line);padding:6px 4px;text-align:center}
+table.audio th{background:var(--soft);font-weight:600}
+table.audio input{width:56px;padding:5px;text-align:center;font-size:14px;border:1px solid var(--line);border-radius:6px}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.row>div{flex:1;min-width:140px}
+button{cursor:pointer;border:0;border-radius:10px;padding:12px 18px;font-size:16px;font-weight:700}
+.btn-primary{background:var(--brand);color:#fff;width:100%;margin-top:16px}
+.btn-primary:hover{background:var(--brand-d)}
+.btn-ghost{background:var(--soft);color:var(--brand-d);border:1px solid var(--line)}
+.chk{display:flex;align-items:center;gap:8px;font-weight:400;margin:8px 0}
+.chk input{width:18px;height:18px}
+.hint{font-size:13px;color:var(--sub);margin-top:6px}
+canvas{width:100%;height:260px;display:block}
+.tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.tab{padding:9px 16px;border-radius:999px;background:#eef2f7;border:1px solid var(--line);font-weight:600;cursor:pointer;font-size:14px}
+.tab.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.kpi{background:var(--soft);border-radius:12px;padding:12px;text-align:center}
+.kpi b{display:block;font-size:22px;color:var(--brand-d)}
+.kpi span{font-size:12px;color:var(--sub)}
+.player{border:2px solid var(--line);border-radius:14px;padding:16px;margin-top:12px}
+.player.loss{border-color:#d98a8a;background:#fdf3f2}
+.player.aid{border-color:#8fc4a6;background:#f1faf4}
+.player h3{margin:0 0 10px;display:flex;justify-content:space-between;align-items:center}
+.badge{font-size:12px;padding:3px 10px;border-radius:999px;font-weight:600}
+.badge.loss{background:#f3d6d2;color:var(--bad)}
+.badge.aid{background:#cdeedd;color:var(--good)}
+audio{width:100%;margin:8px 0}
+.ab{display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap}
+.ab button{padding:10px 16px}
+button.on{outline:3px solid var(--brand)}
+.status{font-size:14px;color:var(--sub);margin-top:10px;min-height:20px}
+.warnbox{background:#fff6e8;border:1px solid #f0d3a8;color:#8a5410;border-radius:10px;padding:10px 14px;font-size:14px;margin-top:10px}
+.howlbox{background:#fdecea;border:1px solid #f3c2bd;color:#8e2b21;border-radius:10px;padding:10px 14px;font-size:14px;margin-top:10px}
+ul.notes{margin:8px 0 0;padding-left:20px;font-size:14px;color:var(--sub)}
+@media(max-width:920px){.wrap{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header>
+  <h1>助听器验配模拟系统</h1>
+  <p>录入听力图 → 8 通道公开处方公式验配 → 家属戴耳机 A/B 试听「老人现在听到的」与「戴上助听器后听到的」</p>
+</header>
+
+<div class="wrap">
+  <!-- ================= 左栏：录入与控制 ================= -->
+  <div>
+    <div class="card">
+      <h2>① 听力图（dB HL）</h2>
+      <label>快速套用典型听力图</label>
+      <select id="presetSel"></select>
+      <table class="audio" style="margin-top:10px">
+        <thead><tr><th>Hz</th><th>左耳</th><th>右耳</th></tr></thead>
+        <tbody id="agBody"></tbody>
+      </table>
+      <p class="hint">数值越大表示该频率听得越差；可直接修改单元格。</p>
+    </div>
+
+    <div class="card">
+      <h2>② 验配选项</h2>
+      <div class="row">
+        <div>
+          <label>处方公式</label>
+          <select id="formulaSel">
+            <option>NAL-R</option><option>NAL-RP</option>
+            <option>POGO</option><option>FIG6</option>
+          </select>
+        </div>
+        <div>
+          <label>耳模类型</label>
+          <select id="moldSel">
+            <option value="open">开放式（耳塞）</option>
+            <option value="closed">封闭式（定制耳模）</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>验配耳</label>
+          <select id="earSel"><option value="left">左耳</option><option value="right">右耳</option></select>
+        </div>
+      </div>
+      <div class="chk"><input type="checkbox" id="smearChk" checked><label for="smearChk" style="margin:0">言语清晰度模拟（频谱涂抹）</label></div>
+      <div class="chk"><input type="checkbox" id="fbChk" checked><label for="fbChk" style="margin:0">啸叫自动检测与抑制</label></div>
+    </div>
+
+    <div class="card">
+      <h2>③ 录音</h2>
+      <input type="file" id="fileInput" accept="audio/*,.wav,.mp3,.m4a">
+      <p class="hint">不上传则使用内置类言语演示信号（含轻声/停顿/高频擦音）。</p>
+      <div class="chk"><input type="checkbox" id="howlChk"><label for="howlChk" style="margin:0">演示信号中注入啸叫（验证自动抑制）</label></div>
+      <button class="btn-primary" id="runBtn">▶ 开始验配并生成两个试听版本</button>
+      <div class="status" id="runStatus"></div>
+    </div>
+  </div>
+
+  <!-- ================= 右栏：结果与试听 ================= -->
+  <div>
+    <div class="card">
+      <h2>④ 验配报告</h2>
+      <div class="kpis">
+        <div class="kpi"><b id="kpiTime">—</b><span>处理耗时(秒)</span></div>
+        <div class="kpi"><b id="kpiRatio">—</b><span>实时倍率</span></div>
+        <div class="kpi"><b id="kpiHowl">—</b><span>检出啸叫点</span></div>
+        <div class="kpi"><b id="kpiCap">—</b><span>补偿触顶通道</span></div>
+      </div>
+      <div class="tabs">
+        <div class="tab active" data-chart="gain">通道增益 vs 处方目标</div>
+        <div class="tab" data-chart="leak">耳模泄漏与补偿</div>
+        <div class="tab" data-chart="margin">啸叫稳定余量</div>
+        <div class="tab" data-chart="ag">听力图曲线</div>
+      </div>
+      <canvas id="chart" width="760" height="260"></canvas>
+      <div id="warnArea"></div>
+    </div>
+
+    <div class="card">
+      <h2>⑤ 家属戴耳机 A/B 试听</h2>
+      <p class="hint" style="margin-top:0">建议先听「裸耳」感受老人为什么听不清，再切「助听」对比；两版本同源同步，可随时来回切换。</p>
+
+      <div class="player loss">
+        <h3>版本 A：老人现在听到的（裸耳听损模拟）<span class="badge loss">阈值门限+重振+清晰度下降</span></h3>
+        <audio id="playerLoss" controls></audio>
+        <div class="ab">
+          <button class="btn-ghost" id="playLoss">▶ 播放此版本</button>
+          <button class="btn-ghost" id="stopAll">■ 停止</button>
+        </div>
+      </div>
+
+      <div class="player aid">
+        <h3>版本 B：戴上助听器后（8 通道 WDRC + 泄漏补偿 + 啸叫抑制）<span class="badge aid">处方公式验配</span></h3>
+        <audio id="playerAid" controls></audio>
+        <div class="ab">
+          <button class="btn-ghost" id="playAid">▶ 播放此版本</button>
+          <button class="btn-ghost" id="abToggle">⇄ 快速 A/B 切换</button>
+        </div>
+      </div>
+      <ul class="notes">
+        <li>裸耳版：轻声辅音消失、高频言语发闷、嘈杂中言语含糊——这不是老人「不配合」。</li>
+        <li>助听版：轻声被提起、大声不刺耳（压缩）、低频气孔漏音已自动补回。</li>
+        <li>所有处理在本机完成，录音不上传任何外部服务器。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+const STD_FREQS = [125,250,500,1000,2000,3000,4000,6000,8000];
+let lastReport = null, lastAg = null, currentChart = "gain";
+const $ = id => document.getElementById(id);
+
+async function init(){
+  const r = await fetch("/api/presets").then(r=>r.json());
+  const sel = $("presetSel");
+  Object.keys(r.presets).forEach(name=>{
+    const o=document.createElement("option");o.textContent=name;o.value=name;sel.appendChild(o);
+  });
+  sel.value = "轻度老年性聋(高频缓降)";
+  buildAgTable(r.presets[sel.value]);
+  sel.onchange = ()=> buildAgTable(r.presets[sel.value]);
+  document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active"); currentChart=t.dataset.chart; drawChart();
+  });
+  $("runBtn").onclick = runFit;
+  $("playLoss").onclick=()=>playOnly("loss");
+  $("playAid").onclick=()=>playOnly("aid");
+  $("stopAll").onclick=stopAll;
+  $("abToggle").onclick=abToggle;
+}
+
+function buildAgTable(vals){
+  const tb=$("agBody");tb.innerHTML="";
+  STD_FREQS.forEach((f,i)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${f}</td>
+      <td><input type="number" min="0" max="120" value="${vals[i]}" data-ear="left"></td>
+      <td><input type="number" min="0" max="120" value="${vals[i]}" data-ear="right"></td>`;
+    tb.appendChild(tr);
+  });
+}
+function readAudiogram(){
+  const rows=[...document.querySelectorAll("#agBody tr")];
+  return {
+    freqs: STD_FREQS,
+    left_hl: rows.map(r=>+r.querySelector('[data-ear=left]').value),
+    right_hl: rows.map(r=>+r.querySelector('[data-ear=right]').value),
+  };
+}
+
+async function runFit(){
+  const status=$("runStatus"); status.textContent="处理中，请稍候…";
+  const ag=readAudiogram();
+  const fd=new FormData();
+  fd.append("freqs", ag.freqs);
+  ag.left_hl.forEach(v=>fd.append("left_hl",v));
+  ag.right_hl.forEach(v=>fd.append("right_hl",v));
+  fd.append("formula",$("formulaSel").value);
+  fd.append("mold_type",$("moldSel").value);
+  fd.append("ear",$("earSel").value);
+  fd.append("smearing",$("smearChk").checked?"1":"0");
+  fd.append("detect_feedback",$("fbChk").checked?"1":"0");
+  const file=$("fileInput").files[0];
+  if(file) fd.append("audio",file);
+  else { fd.append("demo_seconds","8"); fd.append("inject_howl",$("howlChk").checked?"1":"0"); }
+
+  const resp=await fetch("/api/process",{method:"POST",body:fd});
+  if(!resp.ok){ status.textContent="处理失败："+resp.status; return; }
+  const ct=resp.headers.get("Content-Type")||"";
+  const boundary=ct.split("boundary=")[1];
+  const blob=await resp.blob();
+  const parts=await parseMultipart(blob,boundary);
+  lastReport=JSON.parse(new TextDecoder().decode(parts.report));
+  lastAg=ag;
+  $("playerLoss").src=URL.createObjectURL(new Blob([parts.unaided],{type:"audio/wav"}));
+  $("playerAid").src=URL.createObjectURL(new Blob([parts.aided],{type:"audio/wav"}));
+  renderReport(lastReport);
+  status.textContent="✓ 完成，可在下方 A/B 试听";
+}
+
+async function parseMultipart(blob,boundary){
+  const buf=new Uint8Array(await blob.arrayBuffer());
+  const enc=new TextEncoder();
+  const delim=enc.encode("--"+boundary);
+  const cuts=[];for(let i=0;i<buf.length-delim.length;i++){
+    let ok=true;for(let j=0;j<delim.length;j++)if(buf[i+j]!==delim[j]){ok=false;break;}
+    if(ok)cuts.push(i);
+  }
+  const out={};
+  for(let k=0;k<cuts.length-1;k++){
+    const part=buf.slice(cuts[k]+delim.length+2,cuts[k+1]-2);
+    const headEnd=indexOfSeq(part,enc.encode("\r\n\r\n"));
+    const head=new TextDecoder().decode(part.slice(0,headEnd));
+    const body=part.slice(headEnd+4);
+    const name=(head.match(/name="([^"]+)"/)||[])[1];
+    if(name)out[name]=body;
+  }
+  return out;
+}
+function indexOfSeq(buf,seq){
+  for(let i=0;i<buf.length-seq.length;i++){
+    let ok=true;for(let j=0;j<seq.length;j++)if(buf[i+j]!==seq[j]){ok=false;break;}
+    if(ok)return i;
+  }
+  return -1;
+}
+
+function renderReport(r){
+  $("kpiTime").textContent=r.processing_seconds.toFixed(2);
+  $("kpiRatio").textContent=Math.round(r.realtime_ratio)+"×";
+  $("kpiHowl").textContent=r.howls.length;
+  $("kpiCap").textContent=r.capped_channels.length;
+  const warn=$("warnArea");warn.innerHTML="";
+  if(r.capped_channels.length){
+    const d=document.createElement("div");d.className="warnbox";
+    d.textContent=`⚠ 通道 ${r.capped_channels.map(c=>c+1).join("、")} 的低频泄漏补偿已达 40 dB 安全上限，实际低频可能仍有泄漏，建议改用封闭耳模。`;
+    warn.appendChild(d);
+  }
+  if(r.howls.length){
+    const d=document.createElement("div");d.className="howlbox";
+    d.textContent="🔊 检出并压制啸叫频点："+r.notch_freqs.map(f=>f.toFixed(0)+" Hz").join("、")+
+      "（已加窄带陷波并削减所在通道增益）";
+    warn.appendChild(d);
+  }
+  const unsafe=r.stability_margin_db.map((m,i)=>m<6?i+1:null).filter(Boolean);
+  if(unsafe.length){
+    const d=document.createElement("div");d.className="warnbox";
+    d.textContent="⚠ 通道 "+unsafe.join("、")+" 稳定余量不足 6 dB，已自动下调增益防止真耳佩戴起啸。";
+    warn.appendChild(d);
+  }
+  drawChart();
+}
+
+function drawChart(){
+  const cv=$("chart"),ctx=cv.getContext("2d");
+  ctx.clearRect(0,0,cv.width,cv.height);
+  if(!lastReport){drawEmpty(ctx,cv);return;}
+  const r=lastReport,x=r.channel_centers_hz;
+  const W=cv.width-70,H=cv.height-50,ox=56,oy=24;
+  let series=[],yMin=-10,yMax=80,title="";
+  if(currentChart==="gain"){
+    title="通道增益（dB）：实际 vs 处方目标";
+    series=[["处方目标",r.target_gains_db,"#0f6fb8"],["实际施加",r.applied_gains_db,"#1a8f4d"]];
+  }else if(currentChart==="leak"){
+    title="耳模泄漏量与自动补偿（dB）";yMin=0;yMax=45;
+    series=[["泄漏量",r.leakage_db,"#c0392b"],["补偿增益",r.compensation_db,"#0f6fb8"]];
+  }else if(currentChart==="margin"){
+    title="各通道啸叫稳定余量（dB），红线为 6 dB 安全要求";
+    series=[["稳定余量",r.stability_margin_db,"#8e44ad"],["安全线",x.map(()=>6),"#c0392b"]];
+    yMin=0;yMax=Math.max(30,...r.stability_margin_db)+5;
+  }else{
+    title="听力图（dB HL，越大越差）";yMin=0;yMax=100;
+    series=[["左耳",lastAg.left_hl,"#0f6fb8"],["右耳",lastAg.right_hl,"#c8741a"]];
+    return drawAudiogram(ctx,cv,ox,oy,W,H,series,title);
+  }
+  drawAxes(ctx,cv,ox,oy,W,H,yMin,yMax);
+  const xPos=i=>ox+i*W/(x.length-1);
+  const yPos=v=>oy+H-(v-yMin)/(yMax-yMin)*H;
+  ctx.font="12px sans-serif";
+  series.forEach(([name,vals,color],si)=>{
+    ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=2.5;
+    ctx.beginPath();
+    vals.forEach((v,i)=>{const px=xPos(i),py=yPos(v);i?ctx.lineTo(px,py):ctx.moveTo(px,py);});
+    ctx.stroke();
+    vals.forEach((v,i)=>{ctx.beginPath();ctx.arc(xPos(i),yPos(v),3.5,0,7);ctx.fill();});
+  });
+  ctx.fillStyle="#1c2733";ctx.font="bold 14px sans-serif";ctx.fillText(title,ox,14);
+  // 图例
+  let lx=ox;
+  series.forEach(([name,,color])=>{
+    ctx.fillStyle=color;ctx.fillRect(lx,oy+H+22,14,4);
+    ctx.fillStyle="#1c2733";ctx.font="12px sans-serif";ctx.fillText(name,lx+18,oy+H+26);
+    lx+=110;
+  });
+  ctx.fillStyle="#5b6b7d";ctx.font="11px sans-serif";
+  x.forEach((f,i)=>ctx.fillText(f>=1000?(f/1000)+"k":f,xPos(i)-10,oy+H+14));
+}
+function drawAxes(ctx,cv,ox,oy,W,H,yMin,yMax){
+  ctx.strokeStyle="#d9e0e8";ctx.lineWidth=1;ctx.fillStyle="#5b6b7d";ctx.font="10px sans-serif";
+  for(let g=0;g<=5;g++){
+    const v=yMin+(yMax-yMin)*g/5,py=oy+H-g*H/5;
+    ctx.beginPath();ctx.moveTo(ox,py);ctx.lineTo(ox+W,py);ctx.stroke();
+    ctx.fillText(v.toFixed(0),ox-30,py+3);
+  }
+  ctx.strokeStyle="#90a0b0";ctx.strokeRect(ox,oy,W,H);
+}
+function drawAudiogram(ctx,cv,ox,oy,W,H,series,title){
+  const freqs=STD_FREQS,yMin=0,yMax=100;
+  drawAxes(ctx,cv,ox,oy,W,H,yMin,yMax);
+  const xPos=i=>ox+i*W/(freqs.length-1),yPos=v=>oy+H-(v-yMin)/(yMax-yMin)*H;
+  series.forEach(([name,vals,color])=>{
+    ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=2.5;ctx.beginPath();
+    vals.forEach((v,i)=>i?ctx.lineTo(xPos(i),yPos(v)):ctx.moveTo(xPos(i),yPos(v)));
+    ctx.stroke();
+    vals.forEach((v,i)=>{ctx.beginPath();ctx.arc(xPos(i),yPos(v),4,0,7);ctx.fill();});
+  });
+  ctx.fillStyle="#1c2733";ctx.font="bold 14px sans-serif";ctx.fillText(title,ox,14);
+  ctx.fillStyle="#5b6b7d";ctx.font="11px sans-serif";
+  freqs.forEach((f,i)=>ctx.fillText(f>=1000?(f/1000)+"k":f,xPos(i)-10,oy+H+14));
+}
+function drawEmpty(ctx,cv){
+  ctx.fillStyle="#9aa8b6";ctx.font="15px sans-serif";
+  ctx.fillText("点击左侧「开始验配」后显示图表",220,140);
+}
+
+function stopAll(){ $("playerLoss").pause(); $("playerAid").pause();
+  $("playLoss").classList.remove("on");$("playAid").classList.remove("on"); }
+function playOnly(which){
+  stopAll();
+  const p=which==="loss"?$("playerLoss"):$("playerAid");
+  p.currentTime=0;p.play();
+  (which==="loss"?$("playLoss"):$("playAid")).classList.add("on");
+}
+let abState="loss";
+function abToggle(){
+  const pl=$("playerLoss"),pa=$("playerAid");
+  const t=abState==="loss"?pl.currentTime:pa.currentTime;
+  stopAll();
+  abState=abState==="loss"?"aid":"loss";
+  const p=abState==="loss"?pl:pa;
+  p.currentTime=t;p.play();
+  (abState==="loss"?$("playLoss"):$("playAid")).classList.add("on");
+}
+init();
+</script>
+</body>
+</html>
