@@ -1,0 +1,27 @@
+[project]
+name = "hearing-aid-fitting-sim"
+version = "1.0.0"
+description = "助听器验配模拟：处方公式、WDRC 压缩、开放耳漏音补偿、啸叫抑制与听损模拟"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "soundfile>=0.12",
+]
+
+[project.optional-dependencies]
+app = ["streamlit>=1.30", "pandas>=2.0", "matplotlib>=3.7"]
+test = ["pytest>=7.4"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "performance: 一分钟录音处理耗时等性能测试",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["hearing_aid_sim"]
