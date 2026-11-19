@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>助听器验配模拟 · 家属试听</title>
+<style>
+:root{
+  --bg:#f4f6fa; --card:#fff; --ink:#1c2733; --muted:#5d6b7a; --line:#dce3ec;
+  --brand:#1769aa; --brand2:#0f9d8f; --warn:#c77700; --bad:#c0392b; --good:#1e8e5a;
+  --shadow:0 2px 14px rgba(20,40,70,.08);
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#121821; --card:#1b2430; --ink:#e7edf4; --muted:#98a6b5; --line:#2c3947;
+    --shadow:0 2px 14px rgba(0,0,0,.35); }
+}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.6 "Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:linear-gradient(120deg,var(--brand),var(--brand2));color:#fff;padding:22px 28px}
+header h1{margin:0;font-size:22px}
+header p{margin:6px 0 0;opacity:.9;font-size:13px}
+.wrap{max-width:1080px;margin:24px auto;padding:0 20px;display:grid;gap:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:var(--shadow)}
+.card h2{margin:0 0 16px;font-size:17px;display:flex;align-items:center;gap:8px}
+.card h2 .n{background:var(--brand);color:#fff;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:13px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);font-size:14px}
+table.audio{width:100%;border-collapse:collapse;margin-top:8px}
+table.audio th,table.audio td{border:1px solid var(--line);padding:7px 6px;text-align:center;font-size:13px}
+table.audio input{padding:5px;text-align:center}
+table.audio th{background:var(--bg);color:var(--muted);font-weight:600}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:end}
+.row>div{flex:1;min-width:140px}
+button{cursor:pointer;border:0;border-radius:10px;padding:11px 20px;font-size:14px;font-weight:600}
+.btn-primary{background:var(--brand);color:#fff}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-ghost{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+.preset-btns{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.preset-btns button{padding:7px 12px;font-size:13px;background:var(--bg);border:1px solid var(--line);color:var(--ink)}
+canvas{width:100%;height:260px;display:block}
+.ab{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px}
+@media(max-width:760px){.ab{grid-template-columns:1fr}}
+.ab .box{border:2px solid var(--line);border-radius:14px;padding:18px;text-align:center;transition:.2s}
+.ab .box.playing{border-color:var(--brand);box-shadow:0 0 0 3px rgba(23,105,170,.15)}
+.ab .box h3{margin:0 0 10px;font-size:15px}
+.ab .box p{font-size:12px;color:var(--muted);margin:8px 0 0}
+.bigplay{width:100%;padding:18px;font-size:16px;border-radius:12px}
+.play-unaided{background:#6b7785;color:#fff}
+.play-aided{background:var(--brand2);color:#fff}
+.badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600}
+.b-ok{background:rgba(30,142,90,.15);color:var(--good)}
+.b-warn{background:rgba(199,119,0,.15);color:var(--warn)}
+.b-bad{background:rgba(192,57,43,.15);color:var(--bad)}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:8px}
+.metric{background:var(--bg);border-radius:10px;padding:14px}
+.metric .v{font-size:22px;font-weight:700;color:var(--brand)}
+.metric .k{font-size:12px;color:var(--muted);margin-top:2px}
+table.report{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+table.report th,table.report td{padding:8px;border-bottom:1px solid var(--line);text-align:right}
+table.report th:first-child,table.report td:first-child{text-align:left}
+table.report th{color:var(--muted);font-weight:600}
+.note{font-size:12px;color:var(--muted);background:var(--bg);border-left:3px solid var(--brand);padding:10px 14px;border-radius:0 8px 8px 0;margin-top:14px}
+#status{font-size:13px;color:var(--muted);margin-top:10px;min-height:20px}
+.spinner{display:inline-block;width:15px;height:15px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp .8s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>助听器验配模拟系统</h1>
+  <p>导入听力图 → 按处方公式计算 8 通道增益 → 家属戴耳机 A/B 试听：老人现在听到的 vs 戴上助听器后的</p>
+</header>
+
+<div class="wrap">
+
+  <div class="card">
+    <h2><span class="n">1</span>录入听力图 (dB HL)</h2>
+    <div class="preset-btns">
+      <button onclick="fillPreset('normal')">正常听力</button>
+      <button onclick="fillPreset('flat40')">平坦型 40dB</button>
+      <button onclick="fillPreset('presby')">老年性聋(斜坡)</button>
+      <button onclick="fillPreset('steep')">陡降型高频聋</button>
+    </div>
+    <table class="audio">
+      <tr><th>频率 Hz</th><th id="fh"></th></tr>
+      <tr><td>听阈 dBHL</td><td id="lc"></td></tr>
+    </table>
+    <div class="note">数据可手动修改。听阈范围 -10~120 dB HL，数值越大损失越重。</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">2</span>验配设置与处方目标</h2>
+    <div class="row">
+      <div>
+        <label>处方公式</label>
+        <select id="formula">
+          <option value="WDRC">WDRC 响度归一化 (轻声/大声分压缩)</option>
+          <option value="NAL-R">NAL-R 线性处方</option>
+          <option value="NAL-RP">NAL-RP 斜坡修正</option>
+        </select>
+      </div>
+      <div>
+        <label>耳模形式</label>
+        <select id="fitting">
+          <option value="open">开放耳塞 (open dome)</option>
+          <option value="closed">封闭耳模 (closed)</option>
+        </select>
+      </div>
+      <div style="flex:0 0 auto">
+        <button class="btn-primary" onclick="calcPrescription()">计算通道增益</button>
+      </div>
+    </div>
+    <canvas id="chart"></canvas>
+    <div id="prescription-box" class="hidden">
+      <div class="metrics" id="metrics"></div>
+      <table class="report" id="gain-table"></table>
+      <div id="leak-note"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">3</span>上传录音并生成两个试听版本</h2>
+    <div class="row">
+      <div style="flex:2">
+        <label>语音录音 (wav/flac/ogg, 建议 10~60 秒)</label>
+        <input type="file" id="audiofile" accept=".wav,.flac,.ogg,audio/*">
+      </div>
+      <div style="flex:0 0 auto">
+        <button class="btn-primary" id="process-btn" onclick="processAudio()">开始处理</button>
+      </div>
+    </div>
+    <div id="status"></div>
+  </div>
+
+  <div class="card hidden" id="ab-card">
+    <h2><span class="n">4</span>家属 A/B 试听 (请戴耳机)</h2>
+    <div class="ab">
+      <div class="box" id="box-unaided">
+        <h3>老人现在听到的 <span class="badge b-bad">助听前</span></h3>
+        <button class="bigplay play-unaided" onclick="togglePlay('unaided')">▶ 播放助听前</button>
+        <p>含听阈抬升、响度重振、高频频谱展宽(清晰度下降)</p>
+      </div>
+      <div class="box" id="box-aided">
+        <h3>戴上助听器后 <span class="badge b-ok">助听后</span></h3>
+        <button class="bigplay play-aided" onclick="togglePlay('aided')">▶ 播放助听后</button>
+        <p>8 通道 WDRC 压缩 + 泄漏补偿 + 啸叫自动抑制</p>
+      </div>
+    </div>
+    <div class="row" style="margin-top:16px">
+      <div style="flex:0 0 auto">
+        <button class="btn-ghost" onclick="downloadWav('unaided')">下载助听前 wav</button>
+      </div>
+      <div style="flex:0 0 auto">
+        <button class="btn-ghost" onclick="downloadWav('aided')">下载助听后 wav</button>
+      </div>
+      <div style="flex:0 0 auto">
+        <button class="btn-ghost" onclick="playCalibration()">播放 1kHz 校准音</button>
+      </div>
+    </div>
+    <div class="note">建议先用校准音把耳机音量调到舒适且两耳一致，再做 A/B 比较，保证两个版本在同一电平基准下对比。</div>
+  </div>
+
+</div>
+
+<script>
+const FREQS=[125,250,500,1000,1500,2000,3000,4000,6000,8000];
+const PRESETS={
+  normal:[5,5,5,5,5,5,5,5,5,5],
+  flat40:[40,40,40,40,40,40,40,40,40,40],
+  presby:[15,20,25,30,40,45,55,60,70,75],
+  steep:[10,10,15,20,35,50,65,75,85,90]
+};
+let report=null, audioEls={unaided:new Audio(),aided:new Audio()}, calAudio=new Audio('/api/calibration');
+
+function buildInputs(){
+  document.getElementById('fh').innerHTML=FREQS.map(f=>`<th>${f}</th>`).join('');
+  document.getElementById('lc').innerHTML=FREQS.map((_,i)=>`<td><input id="l${i}" type="number" min="-10" max="120" value="20"></td>`).join('');
+}
+function fillPreset(name){ PRESETS[name].forEach((v,i)=>document.getElementById('l'+i).value=v); calcPrescription(); }
+function getLosses(){ return FREQS.map((_,i)=>parseFloat(document.getElementById('l'+i).value)).join(','); }
+
+async function calcPrescription(){
+  const body=new URLSearchParams({losses:getLosses(),formula:formula.value,fitting:fitting.value});
+  const r=await fetch('/api/prescription',{method:'POST',body});
+  report=await r.json();
+  drawChart(report); renderReport(report);
+}
+
+function drawChart(d){
+  const c=document.getElementById('chart'), ctx=c.getContext('2d');
+  const W=c.width=c.clientWidth*2, H=c.height=520, pad=52;
+  ctx.scale(2,2); const w=W/2,h=H/2;
+  ctx.clearRect(0,0,w,h);
+  const x=f=>pad+(Math.log(f/FREQS[0])/Math.log(FREQS[FREQS.length-1]/FREQS[0]))*(w-2*pad);
+  const y=db=>h-pad-(db+10)/130*(h-2*pad);
+  // 网格
+  ctx.strokeStyle=getComputedStyle(document.body).getPropertyValue('--line'); ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--muted');
+  ctx.font='11px sans-serif'; ctx.textAlign='right';
+  for(let db=0;db<=120;db+=20){ctx.beginPath();ctx.moveTo(pad,y(db));ctx.lineTo(w-pad,y(db));ctx.stroke();ctx.fillText(db+'dB',pad-6,y(db)+4);}
+  ctx.textAlign='center';
+  FREQS.forEach(f=>{ctx.fillText(f>=1000?(f/1000)+'k':f,x(f),h-pad+16);});
+  function line(data,color,width,dash=[]){
+    ctx.strokeStyle=color;ctx.lineWidth=width;ctx.setLineDash(dash);ctx.beginPath();
+    data.forEach((v,i)=>{const xx=x(FREQS[i]),yy=y(v);i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy);});
+    ctx.stroke();ctx.setLineDash([]);
+  }
+  // 听力图 (右轴 0-120 HL)
+  line(d.audiogram_loss_dbhl,'#c0392b',2.5);
+  // 通道增益画在第二个量纲: 简单按位置叠加 (增益 0-40 映射到 HL 轴底部区域)
+  const cx=d.channel_centers_hz, cg=d.target_gains_db;
+  ctx.strokeStyle='#0f9d8f';ctx.lineWidth=2.5;ctx.beginPath();
+  cg.forEach((v,i)=>{const xx=x(cx[i]),yy=y(120-v);i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy);});
+  ctx.stroke();
+  // 图例
+  ctx.textAlign='left';ctx.font='12px sans-serif';
+  ctx.fillStyle='#c0392b';ctx.fillRect(pad,12,18,4);ctx.fillText('听力图 (dB HL)',pad+24,17);
+  ctx.fillStyle='#0f9d8f';ctx.fillRect(pad+150,12,18,4);ctx.fillText('8通道目标增益 (dB)',pad+174,17);
+}
+
+function renderReport(d){
+  document.getElementById('prescription-box').classList.remove('hidden');
+  const sevClass=d.pta4<40?'b-ok':d.pta4<60?'b-warn':'b-bad';
+  document.getElementById('metrics').innerHTML=`
+    <div class="metric"><div class="v">${d.pta4}</div><div class="k">PTA4 平均听阈 dB</div></div>
+    <div class="metric"><div class="v"><span class="badge ${sevClass}">${d.severity}</span></div><div class="k">听力损失分级</div></div>
+    <div class="metric"><div class="v">${d.fitting==='open'?'开放':'封闭'}</div><div class="k">耳模形式</div></div>
+    <div class="metric"><div class="v">${d.leakage_stable?'<span class="badge b-ok">稳定</span>':'<span class="badge b-warn">有限制</span>'}</div><div class="k">泄漏补偿状态</div></div>`;
+  let html='<tr><th>通道中心 Hz</th>'+d.channel_centers_hz.map(f=>`<th>${f}</th>`).join('')+'</tr>';
+  const rows=[['目标增益 dB',d.target_gains_db],['压缩比',d.compression_ratios],
+    ['泄漏衰减 dB',d.vent_loss_db],['自动补偿 dB',d.compensation_db],['残余泄漏 dB',d.residual_loss_db]];
+  rows.forEach(([k,arr])=>{html+=`<tr><td>${k}</td>`+arr.map(v=>`<td>${v}</td>`).join('')+'</tr>';});
+  document.getElementById('gain-table').innerHTML=html;
+  const maxRes=Math.max(...d.residual_loss_db);
+  document.getElementById('leak-note').innerHTML= maxRes>0.5
+    ? `<div class="note">开放耳模在 ${d.channel_centers_hz[d.residual_loss_db.indexOf(maxRes)]} Hz 仍有 ${maxRes.toFixed(1)} dB 残余泄漏无法补回——受啸叫反馈余量限制，这是开放验配的真实物理边界，界面如实提示而非掩盖。</div>`
+    : `<div class="note">各通道低频泄漏已在反馈稳定余量内自动补满。</div>`;
+}
+
+async function processAudio(){
+  const f=document.getElementById('audiofile').files[0];
+  if(!f){setStatus('请先选择录音文件');return;}
+  const btn=document.getElementById('process-btn'); btn.disabled=true;
+  setStatus('<span class="spinner"></span>正在处理两条通路 (助听前/助听后)...');
+  const fd=new FormData();
+  fd.append('audio',f); fd.append('losses',getLosses());
+  fd.append('formula',formula.value); fd.append('fitting',fitting.value);
+  try{
+    const r=await fetch('/api/process',{method:'POST',body:fd});
+    if(!r.ok)throw new Error((await r.json()).detail||'处理失败');
+    const d=await r.json(); report=d;
+    audioEls.unaided.src=d.unaided_url; audioEls.aided.src=d.aided_url;
+    document.getElementById('ab-card').classList.remove('hidden');
+    renderReport(d);
+    const perf=d.realtime_factor<0.0334?'b-ok':'b-warn';
+    setStatus(`✅ 完成：${d.duration_s}s 录音处理用时 ${d.elapsed_s}s（实时率 ${d.realtime_factor}，要求 <0.0334）`+
+      (d.howl_count?`；检出并抑制啸叫 ${d.howl_count} 帧，频点 ${d.howl_freqs_hz.slice(0,5).join(', ')} Hz`:'；未检出啸叫'));
+  }catch(e){setStatus('❌ '+e.message);}
+  btn.disabled=false;
+}
+
+function setStatus(s){document.getElementById('status').innerHTML=s;}
+function togglePlay(which){
+  const other=which==='unaided'?'aided':'unaided';
+  audioEls[other].pause();
+  document.getElementById('box-'+other).classList.remove('playing');
+  const el=audioEls[which], box=document.getElementById('box-'+which);
+  if(el.paused){el.play();box.classList.add('playing');}else{el.pause();box.classList.remove('playing');}
+  el.onended=()=>box.classList.remove('playing');
+}
+function downloadWav(which){const a=document.createElement('a');a.href=audioEls[which].src;a.download=which+'.wav';a.click();}
+function playCalibration(){calAudio.play();}
+buildInputs(); fillPreset('presby'); calcPrescription();
+window.addEventListener('resize',()=>{if(report)drawChart(report);});
+</script>
+</body>
+</html>
